@@ -20,4 +20,4 @@ env_logger = "0.11.8"
 # read config for .env
 dotenv = "0.15.0"
 # rust kafka broker
-rs-broker = "1.0.1"
+rs-broker = "1.0.2"
