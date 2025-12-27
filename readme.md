@@ -9,7 +9,7 @@ rust使用rdkafka实现消息发送和消费
 - rdkafka这个库是基于c语言编写的，性能高。
 - 如果不需要kafka更多配置，可以直接使用kafka = "0.10.0" 这个crate: https://crates.io/crates/kafka
 
-基于rdkafka封装的broker见: https://github.com/rs-god/rust-broker
+基于rdkafka封装的broker见: https://github.com/rs-god/rs-broker
 
 # kafka in docker
 
