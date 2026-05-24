@@ -35,13 +35,15 @@ RUN echo "deb http://mirrors.aliyun.com/debian bullseye main" > /etc/apt/sources
     update-ca-certificates && apt-get clean &&  \
     rm -rf /var/lib/apt/lists/* && mkdir -p /app/bin
 
+ENV LID_RDKAFKA_VERSION=2.13.2
+
 ## 安装rdkafka
-#RUN cd /opt && wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.12.1.tar.gz && \
-#    tar -zxf v2.12.1.tar.gz && cd /opt/librdkafka-2.12.1 && mkdir build && cd build && cmake .. && \
+#RUN cd /opt && wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v$LID_RDKAFKA_VERSION.tar.gz && \
+#    tar -zxf v$LID_RDKAFKA_VERSION.tar.gz && cd /opt/librdkafka-$LID_RDKAFKA_VERSION && mkdir build && cd build && cmake .. && \
 #    make && make install
 
-COPY --from=builder /opt/v2.12.1.tar.gz /opt/v2.12.1.tar.gz
-RUN cd /opt && tar -zxf v2.12.1.tar.gz && cd /opt/librdkafka-2.12.1 && mkdir build && cd build && cmake .. && \
+COPY --from=builder /opt/v$LID_RDKAFKA_VERSION.tar.gz /opt/v$LID_RDKAFKA_VERSION.tar.gz
+RUN cd /opt && tar -zxf v$LID_RDKAFKA_VERSION.tar.gz && cd /opt/librdkafka-$LID_RDKAFKA_VERSION && mkdir build && cd build && cmake .. && \
     make && make install
 
 # 设置环境变量
