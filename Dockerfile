@@ -22,8 +22,8 @@ FROM debian:bullseye-slim
 WORKDIR /app
 
 # 设置gRPC微服务和metrics服务运行端口
-EXPOSE 50051
-EXPOSE 8090
+#EXPOSE 50051
+#EXPOSE 8090
 
 # 设置deb镜像源，这里我使用aliyun的镜像
 RUN echo "deb http://mirrors.aliyun.com/debian bullseye main" > /etc/apt/sources.list &&  \

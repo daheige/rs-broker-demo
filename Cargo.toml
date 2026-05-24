@@ -12,12 +12,12 @@ name = "subscribe"
 path = "src/subscribe.rs"
 
 [dependencies]
-tokio = { version = "1.48.0", features = ["full"] }
-rdkafka = { version = "0.38.0", features = ["cmake-build"] }
+tokio = { version = "1.52.3", features = ["full"] }
+rdkafka = { version = "0.39.0", features = ["cmake-build"] }
 log = "0.4.29"
-env_logger = "0.11.8"
+env_logger = "0.11.10"
 
 # read config for .env
 dotenv = "0.15.0"
 # rust kafka broker
-rs-broker = "1.0.2"
+rs-broker = "1.0.3"
