@@ -1,4 +1,4 @@
-FROM rust:1.95.0-bullseye
+FROM rust:1.97.1-bullseye
 
 LABEL authors="heige"
 
@@ -7,7 +7,7 @@ ENV LANG=C.UTF-8
 
 # 设置nodejs和go版本
 ENV NODEJS_VERSION=24 \
-    GO_VERSION=1.25.10 \
+    GO_VERSION=1.26.4 \
     GOPATH=/go \
     GOROOT=/usr/local/go \
     CGO_ENABLED=0 \
@@ -16,7 +16,7 @@ ENV NODEJS_VERSION=24 \
     RUSTUP_UPDATE_ROOT=https://mirrors.ustc.edu.cn/rust-static/rustup \
     PATH=$PATH:/go/bin:/usr/local/go/bin
 
-ENV LID_RDKAFKA_VERSION=2.13.2
+ENV LID_RDKAFKA_VERSION=2.15.0
 
 # 设置deb镜像源，这里我使用aliyun的镜像
 RUN echo "deb http://mirrors.aliyun.com/debian bullseye main" > /etc/apt/sources.list &&  \
@@ -44,8 +44,10 @@ RUN echo "deb http://mirrors.aliyun.com/debian bullseye main" > /etc/apt/sources
 
 # 安装rdkafka
 RUN cd /opt && wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v$LID_RDKAFKA_VERSION.tar.gz && \
-    tar -zxf v$LID_RDKAFKA_VERSION.tar.gz && cd /opt/librdkafka-$LID_RDKAFKA_VERSION && mkdir build && cd build && cmake .. && \
-    make && make install
+    tar -zxf v$LID_RDKAFKA_VERSION.tar.gz && cd /opt/librdkafka-$LID_RDKAFKA_VERSION && mkdir build && cd build && cmake -DRDKAFKA_BUILD_TESTS=OFF -DRDKAFKA_BUILD_EXAMPLES=OFF .. && \
+    make && make install && \
+    echo "$LID_RDKAFKA_VERSION" > /opt/rdkafka.version && \
+    cp /opt/v$LID_RDKAFKA_VERSION.tar.gz /opt/rdkafka.tar.gz
 
 #或者直接手动指定
 #RUN cd /opt && wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.12.1.tar.gz && \

@@ -19,6 +19,25 @@ rust使用rdkafka实现消息发送和消费
 docker-compose up -d
 ```
 
+如果配置文件有变更或容器已存在，需要强制重新创建并启动：
+
+```shell
+# 强制重新创建容器并启动
+docker-compose up -d --force-recreate
+
+# 强制重新构建镜像并启动
+docker-compose up -d --build
+
+# 强制重新创建并忽略孤儿容器
+docker-compose up -d --force-recreate --remove-orphans
+```
+
+或者使用kafka-native镜像：
+
+```shell
+make kafka
+```
+
 进入容器后，创建topic
 
 ```shell
@@ -70,33 +89,135 @@ pkg-config --modversion rdkafka
 
 # rdkafka in docker
 
+本项目提供两种容器化环境：**Alpine**（默认，根目录）和 **Debian**（位于 `debian/` 目录）。
+
+## 镜像说明
+
+| 环境 | 开发镜像 Dockerfile | 运行镜像 Dockerfile | 说明 |
+|------|---------------------|---------------------|------|
+| Alpine | [rust-dev.Dockerfile](rust-dev.Dockerfile) | [Dockerfile](Dockerfile) | 默认环境，基于 `rust:1.97.1-alpine` 构建，`alpine:3.24` 运行，启用 musl 静态链接 |
+| Debian | [debian/Dockerfile-dev](debian/Dockerfile-dev) | [debian/Dockerfile](debian/Dockerfile) | 基于 `rust:1.97.1-bullseye` / `debian:bullseye-slim` |
+
+> 注意：运行镜像的构建基于对应的基础开发镜像（`rs-dev:v1.0` 或 `alpine-rs-dev:v1.0`），请先构建开发镜像。
+
+## 构建特性
+
+### 静态链接
+
+Alpine 环境开启 musl 静态链接：
+
+```dockerfile
+ENV RUSTFLAGS="-C target-feature=+crt-static"
+ENV PKG_CONFIG_ALL_STATIC=1
+```
+
+这样 `rdkafka-sys` 会从源码编译 `librdkafka` 并尽量静态链接其依赖（openssl、zstd、lz4、curl、sasl 等）。
+
+### 国内镜像加速
+
+Alpine 构建中通过 `sed` 将 apk 默认源替换为清华镜像源，以加速依赖下载：
+
+```dockerfile
+sed -i 's|dl-cdn.alpinelinux.org|mirror.tuna.tsinghua.edu.cn|g' /etc/apk/repositories
+```
+
+### 时区配置
+
+Alpine 环境设置时区为 `Asia/Shanghai`：
+
+```dockerfile
+ENV TZ=Asia/Shanghai
+```
+
+### rdkafka 版本一致性
+
+为避免基础镜像与运行镜像中 rdkafka 版本不一致，基础镜像在安装 rdkafka 时会同时生成两个文件：
+
+- `/opt/rdkafka.version`：记录当前安装的 rdkafka 版本号
+- `/opt/rdkafka.tar.gz`：对应版本的源码包
+
+运行镜像通过 `COPY --from=builder` 将这两个文件复制到运行阶段，再执行 `cat /opt/rdkafka.version` 读取版本号进行解压编译，从而保证版本完全一致。
+
+### 关闭 rdkafka 非必要构建
+
+rdkafka 的 `cmake` 命令关闭了 tests 和 examples，避免在 musl 环境下因缺失相关头文件导致构建失败：
+
+```dockerfile
+cmake -DRDKAFKA_BUILD_TESTS=OFF -DRDKAFKA_BUILD_EXAMPLES=OFF ..
+```
+
+## Alpine 环境（默认）
+
+在仓库根目录下执行：
+
 ```shell
 # 构建rust运行环境的基础镜像
 make build-dev
-```
 
-构建容器镜像
-
-```shell
+# 构建应用运行镜像
 make build
-```
 
-运行容器
-
-```shell
+# 运行容器
 make run
+
+# 停止并重新运行容器
+make rerun
+
+# 重新构建镜像并运行容器
+make rebuild
+
+# 查看容器日志
+make logs
+
+# 进入容器
+make exec
 ```
 
-进入容器运行消息发送
+进入容器运行消息发送：
 
 ```shell
-docker exec -it rs-broker /bin/bash
-#root@ab9534dcd889:/app# ls
-#bin  main
-#root@ab9534dcd889:/app# ./main
-#Hello, world!
-#delivery status: Ok(Delivery { partition: 0, offset: 15, timestamp: CreateTime(1765010845887) })
-#root@ab9534dcd889:/app#
+docker exec -it alpine-rs-broker-demo /bin/bash
+# /app# ls
+# bin  consumer  main
+# /app# ./main
+```
+
+## Debian 环境
+
+进入 `debian/` 目录后执行：
+
+```shell
+cd debian
+
+# 构建rust运行环境的基础镜像
+make build-dev
+
+# 构建应用运行镜像
+make build
+
+# 运行容器
+make run
+
+# 停止并重新运行容器
+make rerun
+
+# 重新构建镜像并运行容器
+make rebuild
+
+# 查看容器日志
+make logs
+
+# 进入容器
+make exec
+```
+
+进入容器运行消息发送：
+
+```shell
+docker exec -it rs-broker-demo /bin/bash
+# root@xxx:/app# ls
+# bin  consumer  main
+# root@xxx:/app# ./main
 ```
 
 运行效果如下：
