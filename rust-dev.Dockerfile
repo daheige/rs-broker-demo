@@ -18,8 +18,8 @@ ENV GO_VERSION=1.26.4 \
 ENV LID_RDKAFKA_VERSION=2.15.0
 
 # 设置静态链接标志：+crt-static 表示静态链接 musl C 运行时
-# PKG_CONFIG_ALL_STATIC=1 表示 pkg-config 优先使用静态库
-ENV RUSTFLAGS="-C target-feature=+crt-static"
+# 使用 CARGO_TARGET_*_RUSTFLAGS 避免影响 proc-macro 等 build 阶段 crate
+ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-C target-feature=+crt-static"
 ENV PKG_CONFIG_ALL_STATIC=1
 
 # 安装必要的构建工具和依赖（用于 rdkafka-sys 从源码编译 librdkafka 并静态链接）
@@ -62,7 +62,7 @@ RUN echo $GOPROXY && echo "export LC_ALL=$LANG"  >>  /etc/profile \
     update-ca-certificates
 
 # 安装go（增加重试机制）
-RUN cd /usr/local && wget --tries=3 --timeout=60 https://go.dev/dl/go$GO_VERSION.linux-amd64.tar.gz && \
+RUN cd /usr/local && wget --tries=3 --timeout=60 https://golang.google.cn/dl/go$GO_VERSION.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go$GO_VERSION.linux-amd64.tar.gz && \
     rm -f go$GO_VERSION.linux-amd64.tar.gz && \
     mkdir -p /go/bin && mkdir -p /go/pkg && mkdir -p /go/src && \
