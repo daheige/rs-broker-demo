@@ -1,6 +1,6 @@
 FROM rust:1.97.1-bullseye
 
-LABEL authors="heige"
+LABEL authors="daheige"
 
 # 设置环境变量
 ENV LANG=C.UTF-8
@@ -50,8 +50,8 @@ RUN cd /opt && wget https://github.com/confluentinc/librdkafka/archive/refs/tags
     cp /opt/v$LID_RDKAFKA_VERSION.tar.gz /opt/rdkafka.tar.gz
 
 #或者直接手动指定
-#RUN cd /opt && wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.12.1.tar.gz && \
-#    tar -zxf v2.12.1.tar.gz && cd /opt/librdkafka-2.12.1 && mkdir build && cd build && cmake .. && \
+#RUN cd /opt && wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.15.0.tar.gz && \
+#    tar -zxf v2.15.0.tar.gz && cd /opt/librdkafka-2.15.0 && mkdir build && cd build && cmake .. && \
 #    make && make install
 
 # 设置环境变量

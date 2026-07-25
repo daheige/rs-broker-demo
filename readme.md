@@ -93,10 +93,10 @@ pkg-config --modversion rdkafka
 
 ## 镜像说明
 
-| 环境 | 开发镜像 Dockerfile | 运行镜像 Dockerfile | 说明 |
-|------|---------------------|---------------------|------|
-| Alpine | [rust-dev.Dockerfile](rust-dev.Dockerfile) | [Dockerfile](Dockerfile) | 默认环境，基于 `rust:1.97.1-alpine` 构建开发镜像 `alpine-rs-dev:v1.0`，运行镜像基于 `alpine-rs-dev:v1.0` 和 `alpine:3.24` 两阶段构建 |
-| Debian | [debian/Dockerfile-dev](debian/Dockerfile-dev) | [debian/Dockerfile](debian/Dockerfile) | 基于 `rust:1.97.1-bullseye` / `debian:bullseye-slim` |
+| 环境     | 开发镜像 Dockerfile                                | 运行镜像 Dockerfile                        | 说明                                                                                                         |
+|--------|------------------------------------------------|----------------------------------------|------------------------------------------------------------------------------------------------------------|
+| Alpine | [rust-dev.Dockerfile](rust-dev.Dockerfile)     | [Dockerfile](Dockerfile)               | 默认环境，基于 `rust:1.97.1-alpine` 构建开发镜像 `alpine-rs-dev:v1.0`，运行镜像基于 `alpine-rs-dev:v1.0` 和 `alpine:3.24` 两阶段构建 |
+| Debian | [debian/Dockerfile-dev](debian/Dockerfile-dev) | [debian/Dockerfile](debian/Dockerfile) | 基于 `rust:1.97.1-bullseye` / `debian:bullseye-slim`                                                         |
 
 > 注意：运行镜像的构建基于对应的基础开发镜像（`rs-dev:v1.0` 或 `alpine-rs-dev:v1.0`），请先构建开发镜像。
 
@@ -112,12 +112,14 @@ ENV PKG_CONFIG_ALL_STATIC=1
 ```
 
 原因：
+
 - Alpine 的 Rust host target 是 `x86_64-unknown-linux-musl`，且该 target **默认启用 `+crt-static`**
 - 默认的 `+crt-static` 会导致 `async-trait` 等 proc-macro crate 无法编译（proc-macro 必须是动态库）
 - 使用 `-crt-static` 可以关闭默认的静态 C 运行时链接，让 proc-macro 正常编译
 - `PKG_CONFIG_ALL_STATIC=1` 仍然会让 `rdkafka-sys` 尽量静态链接 openssl、sasl、zstd、lz4、curl 等依赖到最终二进制
 
-> 注意：基础镜像 [rust-dev.Dockerfile](rust-dev.Dockerfile) 中保留 `RUSTFLAGS="-C target-feature=+crt-static"` 作为开发环境配置；根目录 [Dockerfile](Dockerfile) 会根据实际编译需要覆盖为 `-crt-static`。
+> 注意：基础镜像 [rust-dev.Dockerfile](rust-dev.Dockerfile) 中保留 `RUSTFLAGS="-C target-feature=+crt-static"`
+> 作为开发环境配置；根目录 [Dockerfile](Dockerfile) 会根据实际编译需要覆盖为 `-crt-static`。
 
 ### 国内镜像加速
 
@@ -137,12 +139,40 @@ ENV TZ=Asia/Shanghai
 
 ### rdkafka 版本一致性
 
-为避免基础镜像与运行镜像中 rdkafka 版本不一致，基础镜像在安装 rdkafka 时会同时生成两个文件：
+为避免基础镜像与运行镜像中 rdkafka 版本不一致，运行镜像直接复用基础镜像 `alpine-rs-dev:v1.0` 中已编译好的 rdkafka 动态库：
 
-- `/opt/rdkafka.version`：记录当前安装的 rdkafka 版本号
-- `/opt/rdkafka.tar.gz`：对应版本的源码包
+```dockerfile
+COPY --from=builder /usr/local/lib/librdkafka.so* /usr/local/lib/
+COPY --from=builder /usr/local/lib/pkgconfig/rdkafka*.pc /usr/local/lib/pkgconfig/
+```
 
-运行镜像通过 `COPY --from=builder` 将这两个文件复制到运行阶段，再执行 `cat /opt/rdkafka.version` 读取版本号进行解压编译，从而保证版本完全一致。
+由于 builder 阶段基于 `alpine-rs-dev:v1.0`，而 `alpine-rs-dev:v1.0` 中的 rdkafka 版本是固定的，因此运行镜像中的 rdkafka 版本与基础镜像完全一致。
+
+> 基础镜像 [rust-dev.Dockerfile](rust-dev.Dockerfile) 在安装 rdkafka 时也会生成 `/opt/rdkafka.version` 和 `/opt/rdkafka.tar.gz`，用于记录版本和保留源码包。
+
+### 运行时镜像精简
+
+根目录 [Dockerfile](Dockerfile) 的运行阶段不再重新编译 rdkafka，而是从 builder 阶段直接复制已编译好的动态库。运行时仅安装必要的运行时依赖库：
+
+```dockerfile
+RUN apk add --no-cache \
+    bash \
+    ca-certificates \
+    tzdata \
+    openssl \
+    zlib \
+    zstd-libs \
+    lz4-libs \
+    curl \
+    cyrus-sasl
+```
+
+相比重新编译 rdkafka 的方案，这样显著减少了：
+- 构建时间（无需执行 cmake/make）
+- 镜像体积（无需安装构建工具链）
+- 运行时依赖复杂度
+
+同时通过 `LD_LIBRARY_PATH=/usr/local/lib` 确保 rdkafka 动态库可被正确加载。
 
 ### 关闭 rdkafka 非必要构建
 
@@ -225,6 +255,8 @@ docker exec -it rs-broker-demo /bin/bash
 # bin  consumer  main
 # root@xxx:/app# ./main
 ```
+
+![pub-sub.png](pub-sub.png)
 
 运行效果如下：
 ![rdkafka-publish.png](rdkafka-publish.png)

@@ -1,6 +1,6 @@
 FROM rust:1.97.1-alpine
 
-LABEL authors="heige"
+LABEL authors="daheige"
 
 # 设置环境变量
 ENV LANG=C.UTF-8
@@ -22,10 +22,9 @@ ENV RUSTFLAGS="-C target-feature=+crt-static"
 ENV PKG_CONFIG_ALL_STATIC=1
 
 # 安装必要的构建工具和依赖（用于 rdkafka-sys 从源码编译 librdkafka 并静态链接）
-RUN echo $GOPROXY && echo "export LC_ALL=$LANG"  >>  /etc/profile \
+RUN echo $GOPROXY && echo "export LC_ALL=$LANG" >> /etc/profile \
     && sed -i 's|dl-cdn.alpinelinux.org|mirror.tuna.tsinghua.edu.cn|g' /etc/apk/repositories \
     && apk update \
-    && apk upgrade \
     && apk add --no-cache \
     musl-dev \
     openssl-dev \
@@ -47,20 +46,15 @@ RUN echo $GOPROXY && echo "export LC_ALL=$LANG"  >>  /etc/profile \
     git \
     ca-certificates \
     tzdata \
-    vim \
     bash \
     curl \
-    wget \
-    net-tools \
-    iputils \
-    protobuf-dev \
-    nodejs \
-    npm \
-    python3 \
-    py3-pip && \
-    update-ca-certificates
+    wget vim \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone \
+    && rm -rf /var/cache/apk/* /tmp/* /var/tmp/* $HOME/.cache \
+    && update-ca-certificates
 
-# 安装go（增加重试机制）
+# 安装go
 RUN cd /usr/local && wget --tries=3 --timeout=60 https://golang.google.cn/dl/go$GO_VERSION.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go$GO_VERSION.linux-amd64.tar.gz && \
     rm -f go$GO_VERSION.linux-amd64.tar.gz && \
@@ -79,7 +73,7 @@ RUN mkdir -p /usr/local/cargo && \
     echo "[http]" >> /usr/local/cargo/config.toml && \
     echo "check-revoke = false" >> /usr/local/cargo/config.toml
 
-# 安装rdkafka（关闭cmake test，musl缺失部分测试头文件）
+# 安装rdkafka（关闭cmake test/examples，musl缺失部分测试头文件）
 RUN cd /opt && wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v$LID_RDKAFKA_VERSION.tar.gz && \
     tar -zxf v$LID_RDKAFKA_VERSION.tar.gz && cd /opt/librdkafka-$LID_RDKAFKA_VERSION && mkdir build && cd build && \
     cmake -DRDKAFKA_BUILD_TESTS=OFF -DRDKAFKA_BUILD_EXAMPLES=OFF .. && make && make install && \
