@@ -95,7 +95,7 @@ pkg-config --modversion rdkafka
 
 | 环境 | 开发镜像 Dockerfile | 运行镜像 Dockerfile | 说明 |
 |------|---------------------|---------------------|------|
-| Alpine | [rust-dev.Dockerfile](rust-dev.Dockerfile) | [Dockerfile](Dockerfile) | 默认环境，基于 `rust:1.97.1-alpine` 构建，`alpine:3.24` 运行，启用 musl 静态链接 |
+| Alpine | [rust-dev.Dockerfile](rust-dev.Dockerfile) | [Dockerfile](Dockerfile) | 默认环境，基于 `rust:1.97.1-alpine` 构建开发镜像 `alpine-rs-dev:v1.0`，运行镜像基于 `alpine-rs-dev:v1.0` 和 `alpine:3.24` 两阶段构建 |
 | Debian | [debian/Dockerfile-dev](debian/Dockerfile-dev) | [debian/Dockerfile](debian/Dockerfile) | 基于 `rust:1.97.1-bullseye` / `debian:bullseye-slim` |
 
 > 注意：运行镜像的构建基于对应的基础开发镜像（`rs-dev:v1.0` 或 `alpine-rs-dev:v1.0`），请先构建开发镜像。
@@ -104,14 +104,20 @@ pkg-config --modversion rdkafka
 
 ### 静态链接
 
-Alpine 环境开启 musl 静态链接：
+Alpine 环境使用 `-crt-static` + `PKG_CONFIG_ALL_STATIC=1` 的组合：
 
 ```dockerfile
-ENV RUSTFLAGS="-C target-feature=+crt-static"
+ENV RUSTFLAGS="-C target-feature=-crt-static"
 ENV PKG_CONFIG_ALL_STATIC=1
 ```
 
-这样 `rdkafka-sys` 会从源码编译 `librdkafka` 并尽量静态链接其依赖（openssl、zstd、lz4、curl、sasl 等）。
+原因：
+- Alpine 的 Rust host target 是 `x86_64-unknown-linux-musl`，且该 target **默认启用 `+crt-static`**
+- 默认的 `+crt-static` 会导致 `async-trait` 等 proc-macro crate 无法编译（proc-macro 必须是动态库）
+- 使用 `-crt-static` 可以关闭默认的静态 C 运行时链接，让 proc-macro 正常编译
+- `PKG_CONFIG_ALL_STATIC=1` 仍然会让 `rdkafka-sys` 尽量静态链接 openssl、sasl、zstd、lz4、curl 等依赖到最终二进制
+
+> 注意：基础镜像 [rust-dev.Dockerfile](rust-dev.Dockerfile) 中保留 `RUSTFLAGS="-C target-feature=+crt-static"` 作为开发环境配置；根目录 [Dockerfile](Dockerfile) 会根据实际编译需要覆盖为 `-crt-static`。
 
 ### 国内镜像加速
 

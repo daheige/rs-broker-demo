@@ -2,6 +2,16 @@ FROM alpine-rs-dev:v1.0 AS builder
 
 LABEL authors="daheige"
 
+ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+ENV PKG_CONFIG_ALLOW_SYSTEM_LIBS=1
+ENV PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1
+
+# Alpine musl host target 默认启用 +crt-static，会导致 proc-macro crate 无法编译
+# 使用 -crt-static 让 proc-macro 可以生成动态库，同时通过 PKG_CONFIG_ALL_STATIC
+# 让 rdkafka 及其依赖尽量静态链接到最终二进制
+ENV RUSTFLAGS="-C target-feature=-crt-static"
+ENV PKG_CONFIG_ALL_STATIC=1
+
 #解决docker时区问题
 ENV TZ=Asia/Shanghai
 
