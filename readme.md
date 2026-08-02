@@ -66,8 +66,8 @@ apt-get install -y build-essential libcurl4-openssl-dev libssl-dev zlib1g-dev pk
 2. 源码cmake编译安装
 
 ```shell
-cd /opt && wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.12.1.tar.gz
-tar -zxf v2.12.1.tar.gz && cd /opt/librdkafka-2.12.1 && mkdir build && cd build && cmake ..
+cd /opt && wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.15.0.tar.gz
+tar -zxf v2.15.0.tar.gz && cd /opt/librdkafka-2.15.0 && mkdir build && cd build && cmake ..
 make && make install
 ```
 
