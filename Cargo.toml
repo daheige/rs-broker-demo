@@ -1,6 +1,6 @@
 [package]
 name = "rs-broker-demo"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 
 [[bin]]
@@ -13,11 +13,11 @@ path = "src/subscribe.rs"
 
 [dependencies]
 tokio = { version = "1.53.1", features = ["full"] }
-rdkafka = { version = "0.39.0", features = ["cmake-build"] }
+rdkafka = { version = "0.39.0", features = ["cmake-build", "sasl", "ssl"] }
 log = "0.4.33"
 env_logger = "0.11.11"
 
 # read config for .env
 dotenv = "0.15.0"
 # rust kafka broker
-rs-broker = "1.0.4"
+rs-broker = "1.0.5"
