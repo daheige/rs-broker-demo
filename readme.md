@@ -95,8 +95,8 @@ pkg-config --modversion rdkafka
 
 | 环境     | 开发镜像 Dockerfile                                | 运行镜像 Dockerfile                        | 说明                                                                                                         |
 |--------|------------------------------------------------|----------------------------------------|------------------------------------------------------------------------------------------------------------|
-| Alpine | [rust-dev.Dockerfile](rust-dev.Dockerfile)     | [Dockerfile](Dockerfile)               | 默认环境，基于 `rust:1.97.1-alpine` 构建开发镜像 `alpine-rs-dev:v1.0`，运行镜像基于 `alpine-rs-dev:v1.0` 和 `alpine:3.24` 两阶段构建 |
-| Debian | [debian/Dockerfile-dev](debian/Dockerfile-dev) | [debian/Dockerfile](debian/Dockerfile) | 基于 `rust:1.97.1-bullseye` / `debian:bullseye-slim`                                                         |
+| Alpine | [rust-dev.Dockerfile](rust-dev.Dockerfile)     | [Dockerfile](Dockerfile)               | 默认环境，基于 `rust:1.98.1-alpine` 构建开发镜像 `alpine-rs-dev:v1.0`，运行镜像基于 `alpine-rs-dev:v1.0` 和 `alpine:3.24` 两阶段构建 |
+| Debian | [debian/Dockerfile-dev](debian/Dockerfile-dev) | [debian/Dockerfile](debian/Dockerfile) | 基于 `rust:1.98.1-bullseye` / `debian:bullseye-slim`                                                         |
 
 > 注意：运行镜像的构建基于对应的基础开发镜像（`rs-dev:v1.0` 或 `alpine-rs-dev:v1.0`），请先构建开发镜像。
 
@@ -146,9 +146,11 @@ COPY --from=builder /usr/local/lib/librdkafka.so* /usr/local/lib/
 COPY --from=builder /usr/local/lib/pkgconfig/rdkafka*.pc /usr/local/lib/pkgconfig/
 ```
 
-由于 builder 阶段基于 `alpine-rs-dev:v1.0`，而 `alpine-rs-dev:v1.0` 中的 rdkafka 版本是固定的，因此运行镜像中的 rdkafka 版本与基础镜像完全一致。
+由于 builder 阶段基于 `alpine-rs-dev:v1.0`，而 `alpine-rs-dev:v1.0` 中的 rdkafka 版本是固定的，因此运行镜像中的 rdkafka
+版本与基础镜像完全一致。
 
-> 基础镜像 [rust-dev.Dockerfile](rust-dev.Dockerfile) 在安装 rdkafka 时也会生成 `/opt/rdkafka.version` 和 `/opt/rdkafka.tar.gz`，用于记录版本和保留源码包。
+> 基础镜像 [rust-dev.Dockerfile](rust-dev.Dockerfile) 在安装 rdkafka 时也会生成 `/opt/rdkafka.version` 和
+`/opt/rdkafka.tar.gz`，用于记录版本和保留源码包。
 
 ### 运行时镜像精简
 
@@ -168,6 +170,7 @@ RUN apk add --no-cache \
 ```
 
 相比重新编译 rdkafka 的方案，这样显著减少了：
+
 - 构建时间（无需执行 cmake/make）
 - 镜像体积（无需安装构建工具链）
 - 运行时依赖复杂度

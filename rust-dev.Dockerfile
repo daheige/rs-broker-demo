@@ -1,4 +1,4 @@
-FROM rust:1.97.1-alpine
+FROM rust:1.98.1-alpine
 
 LABEL authors="daheige"
 
@@ -6,7 +6,7 @@ LABEL authors="daheige"
 ENV LANG=C.UTF-8
 
 # 设置go版本
-ENV GO_VERSION=1.26.4 \
+ENV GO_VERSION=1.26.8 \
     GOPATH=/go \
     GOROOT=/usr/local/go \
     CGO_ENABLED=0 \
