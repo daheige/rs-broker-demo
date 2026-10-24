@@ -7,6 +7,9 @@ use rdkafka::message::Headers;
 use rdkafka::{ClientConfig, Message};
 use std::env;
 
+// 使用rdkafka组件包，消费消息，需要写非常多的代码，
+// 建议使用rs-broker组件包，消费消息，代码量少，使用简单
+//
 // 命令终端运行方式：RUST_LOG=debug cargo run --bin consumer
 #[tokio::main]
 async fn main() {
