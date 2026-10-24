@@ -66,8 +66,8 @@ apt-get install -y build-essential libcurl4-openssl-dev libssl-dev zlib1g-dev pk
 2. 源码cmake编译安装
 
 ```shell
-cd /opt && wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.15.0.tar.gz
-tar -zxf v2.15.0.tar.gz && cd /opt/librdkafka-2.15.0 && mkdir build && cd build && cmake ..
+cd /opt && wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.16.0.tar.gz
+tar -zxf v2.16.0.tar.gz && cd /opt/librdkafka-2.16.0 && mkdir build && cd build && cmake ..
 make && make install
 ```
 
@@ -85,6 +85,70 @@ export PKG_CONFIG_ALLOW_SYSTEM_CFLAGS=1
 
 ```shell
 pkg-config --modversion rdkafka
+```
+
+# macos openssl版本兼容问题
+
+在 macOS 上同时安装多个版本的 openssl（如 `openssl@3` 和 `openssl@4`）时，`cargo build` 可能出现链接错误：
+
+```
+Undefined symbols for architecture x86_64:
+  "_BIO_eof", referenced from:
+      _rd_kafka_ssl_set_certs in librdkafka_sys-xxxx.rlib(rdkafka_ssl.c.o)
+ld: symbol(s) not found for architecture x86_64
+clang: error: linker command failed with exit code 1
+```
+
+## 原因
+
+以 `brew install openssl@4` 为例，link 后会在 `/usr/local/include`、`/usr/local/lib` 创建指向 openssl@4 的符号链接。之后编译 rdkafka（C 库）时会出现**头文件与链接库版本不一致**：
+
+1. macOS 的 clang 会**优先搜索 `/usr/local/include`，再搜索 `-isystem`** 指定的路径。即使 cmake 正确找到了 `openssl@3`（编译参数为 `-isystem /usr/local/opt/openssl@3/include`），实际 include 的仍是 `/usr/local/include/openssl/`（@4 的头文件）；
+2. `BIO_eof` 在 OpenSSL 3 中是一个**宏**（展开为 `BIO_ctrl`），而在 OpenSSL 4 中是真实的**函数符号**。于是 rdkafka 被编译成引用 `_BIO_eof` 函数，而 Rust 最终链接的是 `openssl-sys` 找到的 `openssl@3` 库（只有宏，没有该符号）→ 链接失败。
+
+## 解决方法
+
+**方案一（推荐）：解除 openssl@4 的链接，保持 keg-only 状态**
+
+```shell
+brew unlink openssl@4
+```
+
+然后清理 rdkafka-sys 的构建缓存并重新编译：
+
+```shell
+rm -rf target/debug/build/rdkafka-sys-* target/debug/deps/librdkafka_sys*
+cargo build
+```
+
+> `brew unlink` 只是移除 `/usr/local` 下的符号链接，软件仍保留在 Cellar 中。需要时可随时 `brew link openssl@4` 恢复，但会重新引发本问题。
+
+**方案二：项目中显式指定 OpenSSL 版本**
+
+通过 [.cargo/config.toml](.cargo/config.toml) 固定使用 `openssl@3`：
+
+```toml
+[env]
+OPENSSL_ROOT_DIR="/usr/local/opt/openssl@3"
+CMAKE_PREFIX_PATH="/usr/local/opt/openssl@3"
+```
+
+同样清理 rdkafka-sys 缓存后重新编译。
+
+或者设置环境变量，然后执行 `cargo build` 即可。
+```shell
+export OPENSSL_ROOT_DIR="/usr/local/opt/openssl@3"
+export CMAKE_PREFIX_PATH="/usr/local/opt/openssl@3"
+```
+
+## 建议
+
+- 多版本并存时保持全部 keg-only（unlink 状态），让 `/usr/local` 默认路径干净；
+- 哪个项目需要哪个版本，就在该项目中通过 `OPENSSL_ROOT_DIR` 显式指定；
+- 验证实际使用的头文件版本：
+
+```shell
+echo '#include <openssl/ssl.h>' | cc -E -H -isystem /usr/local/opt/openssl@3/include - 2>&1 | grep ssl.h
 ```
 
 # rdkafka in docker

@@ -1,4 +1,4 @@
-FROM rust:1.98.1-alpine
+FROM rust:1.99.1-alpine
 
 LABEL authors="daheige"
 
@@ -15,7 +15,7 @@ ENV GO_VERSION=1.26.8 \
     RUSTUP_UPDATE_ROOT=https://mirrors.ustc.edu.cn/rust-static/rustup \
     PATH=$PATH:/go/bin:/usr/local/go/bin
 
-ENV LID_RDKAFKA_VERSION=2.15.0
+ENV LID_RDKAFKA_VERSION=2.16.0
 
 # 设置静态链接标志：+crt-static 表示静态链接 musl C 运行时
 ENV RUSTFLAGS="-C target-feature=+crt-static"

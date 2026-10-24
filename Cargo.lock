@@ -564,9 +564,9 @@ checksum = "7a2d987857b319362043e95f5353c0535c1f58eec5336fdfcf626430af7def58"
 
 [[package]]
 name = "rs-broker"
-version = "1.0.6"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4796ad5407cb536eba546ef22ed57ead773dcba79dc3419947231e6df7d5ea08"
+checksum = "f412e936a64b926e0abcca49c226c4b1fa6f2e35e9be10b5def489b02d0ca9dc"
 dependencies = [
  "async-trait",
  "env_logger",
@@ -578,7 +578,7 @@ dependencies = [
 
 [[package]]
 name = "rs-broker-demo"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "dotenv",
  "env_logger",
@@ -754,9 +754,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.53.1"
+version = "1.54.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "202caea871b69668250d242070849eb495be178ed697a3e98aebce5bc81a0bed"
+checksum = "b52fd3255258d26fac7264ab5a76b53c13367136dc011d3d6ad4f8ed070396a3"
 dependencies = [
  "bytes",
  "libc",
